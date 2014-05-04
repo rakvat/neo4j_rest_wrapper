@@ -1,0 +1,14 @@
+{application, neo4j_rest_wrapper,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {modules, [neo4j_rest_wrapper]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { neo4j_rest_wrapper_app, []}},
+  {env, []}
+ ]}.
+
