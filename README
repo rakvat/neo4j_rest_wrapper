@@ -1,3 +1,5 @@
+currently empty project. ZFR for erlang wrapper around parts of the neo4j rest api
+
 Dependencies
 . rebar
 . make
