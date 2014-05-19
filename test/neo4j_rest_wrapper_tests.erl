@@ -25,7 +25,7 @@ cypher() ->
     ok.
 
 setup() ->
-    neo4j_rest_wrapper:start().
+    neo4j_rest_wrapper:start("http://0.0.0.0:7474").
 tear_down(_) ->
     neo4j_rest_wrapper:stop().
 
