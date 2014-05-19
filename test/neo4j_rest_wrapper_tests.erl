@@ -21,11 +21,11 @@ cypher() ->
     [FirstRow|_] = Data,
     [{struct, FirstRowResult}] = FirstRow,
     FirstRowData = proplists:get_value(<<"data">>, FirstRowResult),
-    {struct, FirstRowDataContent} = FirstRowData,
+    {struct, _FirstRowDataContent} = FirstRowData,
     ok.
 
 setup() ->
-    inets:start().
+    neo4j_rest_wrapper:start().
 tear_down(_) ->
-    inets:stop().
+    neo4j_rest_wrapper:stop().
 

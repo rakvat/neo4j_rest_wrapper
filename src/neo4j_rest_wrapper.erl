@@ -1,30 +1,52 @@
 -module(neo4j_rest_wrapper).
 -vsn("0.0.1").
+-behavior(gen_server).
 
--export([start/0, stop/0, get_version/0, cypher/1]).
 
-% are start/stop needed here or is it ok to start inets 
-% in application resource file?
+%% API
+-export([start/0, start/1, stop/0, get_version/0, cypher/1]).
+
+% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, 
+         handle_info/2, terminate/2, code_change/3]).
+
+-record(config, {neo4j_url = "http://0.0.0.0:7474"}).
+-record(state, {config=#config{}}).
+-define(SERVER, ?MODULE).
+
 start() ->
-    inets:start().
+    inets:start(),
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start(Neo4jUrl) ->
+    inets:start(),
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Neo4jUrl], []).
 
 stop() ->
     inets:stop().
 
 get_version() ->
-    {ok, Response} = httpc:request("http://0.0.0.0:7474/db/data/"),
+    gen_server:call(?MODULE, version).
+
+cypher(Query) ->
+    gen_server:call(?MODULE, {cypher, Query}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% gen_server callbacks
+init(_Args) ->
+    %% TODO: use neo4j_url from args 
+    {ok, #state{}}.
+handle_call(version, _From, State) ->
+    {ok, Response} = httpc:request(State#state.config#config.neo4j_url ++ "/db/data/"),
     {_Status, _Headers, Body} = Response,
     Parsed = mochijson2:decode(Body),
     {struct, Data} = Parsed,
     Version = proplists:get_value(<<"neo4j_version">>, Data),
-    binary_to_list(Version).
-
+    Result = binary_to_list(Version),
+    {reply, Result, State};
+handle_call({cypher, Query}, _From, State) ->
 % TODO: params in query
-cypher(Query) ->
-    Url = "http://0.0.0.0:7474/db/data/cypher",
+    Url = State#state.config#config.neo4j_url ++ "/db/data/cypher",
     Headers = [],
     Type = "application/json",
-    %TODO: use query
     Body = "{\"query\": \"" ++ Query ++ "\"}",
     HTTPOptions = [],
     Options = [],
@@ -34,5 +56,16 @@ cypher(Query) ->
     {_Status, _Headers, ResultBody} = Response,
     Parsed = mochijson2:decode(ResultBody),
     {struct, Data} = Parsed,
-    Data.
-
+    Data,
+    {reply, Data, State};
+handle_call(_Request, _From, State) ->
+    Reply = ok,
+    {reply, Reply, State}.
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+handle_info(_Info, State) ->
+    {noreply, State}.
+terminate(_Reason, _State) ->
+    ok.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
