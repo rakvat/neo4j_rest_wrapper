@@ -7,7 +7,8 @@
 -export([start/0, start/1, stop/0, 
          get_version/0, 
          cypher/1,
-         get_node/1]).
+         get_node/1,
+         create_node/1]).
 
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, 
@@ -35,6 +36,10 @@ cypher(Query) ->
 
 get_node(NodeId) ->
     gen_server:call(?MODULE, {get_node, NodeId}).
+
+% Properties should be in format {struct,[{key2,"?"}]}
+create_node(Properties) ->
+    gen_server:call(?MODULE, {create_node, Properties}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% gen_server callbacks
 init(Args) ->
@@ -69,7 +74,6 @@ handle_call({cypher, Query}, _From, State) ->
     Data,
     {reply, Data, State};
 
-% request(Method, Request, HTTPOptions, Options)
 handle_call({get_node, NodeId}, _From, State) ->
     Url = State#state.config#config.neo4j_url ++ "/db/data/node/" ++ integer_to_list(NodeId),
     Headers = [],
@@ -77,6 +81,22 @@ handle_call({get_node, NodeId}, _From, State) ->
     Options = [],
     Request = {Url, Headers},
     Result = httpc:request(get, Request, HTTPOptions, Options),
+    {ok, Response} = Result,
+    {_Status, _Headers, ResultBody} = Response,
+    Parsed = mochijson2:decode(ResultBody),
+    {struct, Data} = Parsed,
+    Data,
+    {reply, Data, State};
+
+handle_call({create_node, Properties}, _From, State) ->
+    Url = State#state.config#config.neo4j_url ++ "/db/data/node",
+    Headers = [],
+    Type = "application/json",
+    Body = iolist_to_binary(mochijson2:encode(Properties)),
+    HTTPOptions = [],
+    Options = [],
+    Request = {Url, Headers, Type, Body},
+    Result = httpc:request(post, Request, HTTPOptions, Options),
     {ok, Response} = Result,
     {_Status, _Headers, ResultBody} = Response,
     Parsed = mochijson2:decode(ResultBody),

@@ -7,8 +7,10 @@ basic_logic_test() ->
 with_inets_test_() ->
     {setup, fun setup/0, fun tear_down/1,
      [fun neo4j_version/0,
+      fun cypher/0,
       fun get_node/0,
-      fun cypher/0]}.
+      fun create_node/0
+      ]}.
 
 neo4j_version() ->
     ?assertEqual("2.0.3", neo4j_rest_wrapper:get_version()).
@@ -41,9 +43,21 @@ cypher() ->
 get_node() ->
     Result = neo4j_rest_wrapper:get_node(0),
     Data = proplists:get_value(<<"data">>, Result),
-    {struct, Properties} = Data,
+    {struct, _Properties} = Data,
     % [{<<"name">>,<<"rakvat">>}]
     ok.
+
+create_node() ->
+    Properties = {struct, [{name, <<"rakvat">>}, {age, 77}]},
+    Result = neo4j_rest_wrapper:create_node(Properties),
+    Data = proplists:get_value(<<"data">>, Result),
+    {struct, NodeData} = Data,
+    SortedNodeData = lists:sort(NodeData),
+    Expected = [{<<"name">>, <<"rakvat">>}, {<<"age">>, 77}],
+    SortedExpected = lists:sort(Expected),
+    SortedExpected = SortedNodeData,
+    ok.
+
 
 % TODO: handle errors from neo4j
 %[{<<"message">>,<<"Cannot find node with id [1] in database.">>},
