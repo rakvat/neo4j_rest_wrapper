@@ -86,21 +86,14 @@ handle_call({get_node, NodeId}, _From, State) ->
     Request = {Url, Headers},
     Result = httpc:request(get, Request, HTTPOptions, Options),
     {ok, Response} = Result,
-    {_Status, _Headers, ResultBody} = Response,
+    {Status, _Headers, ResultBody} = Response,
+    {_, StatusCode, _} = Status,
     Parsed = mochijson2:decode(ResultBody),
     {struct, Data} = Parsed,
-    Data,
-    {reply, Data, State};
-
-handle_call({delete_node, NodeId}, _From, State) ->
-    Url = State#state.config#config.neo4j_url ++ "/db/data/node/" ++ integer_to_list(NodeId),
-    Headers = [],
-    HTTPOptions = [],
-    Options = [],
-    Request = {Url, Headers},
-    Result = httpc:request(delete, Request, HTTPOptions, Options),
-    {ok, _Response} = Result,
-    {reply, {}, State};
+    case StatusCode of
+       200 -> {reply, {ok, Data}, State};
+       _ -> {reply, {error, Data}, State}
+    end;
 
 handle_call({create_node, Properties}, _From, State) ->
     Url = State#state.config#config.neo4j_url ++ "/db/data/node",
@@ -112,11 +105,24 @@ handle_call({create_node, Properties}, _From, State) ->
     Request = {Url, Headers, Type, Body},
     Result = httpc:request(post, Request, HTTPOptions, Options),
     {ok, Response} = Result,
-    {_Status, _Headers, ResultBody} = Response,
+    {Status, _Headers, ResultBody} = Response,
+    {_, StatusCode, _} = Status,
     Parsed = mochijson2:decode(ResultBody),
     {struct, Data} = Parsed,
-    Data,
-    {reply, Data, State};
+    case StatusCode of
+        201 -> {reply, {ok, Data}, State};
+        _ -> {reply, {error, Data}, State}
+    end;
+
+handle_call({delete_node, NodeId}, _From, State) ->
+    Url = State#state.config#config.neo4j_url ++ "/db/data/node/" ++ integer_to_list(NodeId),
+    Headers = [],
+    HTTPOptions = [],
+    Options = [],
+    Request = {Url, Headers},
+    Result = httpc:request(delete, Request, HTTPOptions, Options),
+    {ok, _Response} = Result,
+    {reply, {}, State};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,

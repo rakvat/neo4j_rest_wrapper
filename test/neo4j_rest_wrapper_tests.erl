@@ -10,6 +10,7 @@ with_inets_test_() ->
       fun neo4j_version/0,
       fun cypher/0,
       fun get_node/0,
+      fun get_missing_node/0,
       fun create_node/0,
       fun delete_node/0
       ]}.
@@ -51,18 +52,22 @@ get_node() ->
     FakeJson = "{\"data\" : {\"a\": \"b\"}}",
     FakeResult = {ok, {x,x,FakeJson}},
     meck:expect(httpc, request, fun(_) -> FakeResult end),
-    Result = neo4j_rest_wrapper:get_node(1),
+    {ok, Result} = neo4j_rest_wrapper:get_node(1),
     Data = proplists:get_value(<<"data">>, Result),
     {struct, Properties} = Data,
     [{<<"a">>,<<"b">>}] = Properties,
     ?assert(meck:validate(httpc)),
     ?assertEqual(1, meck:num_calls(httpc, request, '_')).
 
+get_missing_node() ->
+    {error, Result} = neo4j_rest_wrapper:get_node(125234656),
+    ?assert(meck:validate(httpc)),
+    ?assertEqual(1, meck:num_calls(httpc, request, '_')).
 % "{\n  \"message\" : \"Cannot find node with id [23] in database.\",\n  \"exception\" : \"NodeNotFoundException\",\n  \"fullname\" : \"org.neo4j.server.rest.web.NodeNotFoundException\",\n  \"stacktrace\" : [ \"org.neo4j.server.rest.web.DatabaseActions.node(DatabaseActions.java:183)\", \"org.neo4j.server.rest.web.DatabaseActions.getNode(DatabaseActions.java:228)\", \"org.neo4j.server.rest.web.RestfulGraphDatabase.getNode(RestfulGraphDatabase.java:265)\", \"java.lang.reflect.Method.invoke(Unknown Source)\", \"org.neo4j.server.rest.transactional.TransactionalRequestDispatcher.dispatch(TransactionalRequestDispatcher.java:139)\", \"org.neo4j.server.rest.security.SecurityFilter.doFilter(SecurityFilter.java:112)\", \"java.lang.Thread.run(Unknown Source)\" ]\n}"
 
 create_node() ->
     Properties = {struct, [{name, <<"rakvat">>}, {age, 77}]},
-    Result = neo4j_rest_wrapper:create_node(Properties),
+    {ok, Result} = neo4j_rest_wrapper:create_node(Properties),
     Data = proplists:get_value(<<"data">>, Result),
     {struct, NodeData} = Data,
     SortedNodeData = lists:sort(NodeData),
@@ -78,6 +83,7 @@ delete_node() ->
     % TODO: test that node is not available anymore
     ok. 
 
+% TODO real neo4j connection roundtrip test
 
 % TODO: handle errors from neo4j
 %[{<<"message">>,<<"Cannot find node with id [1] in database.">>},
