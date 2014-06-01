@@ -8,6 +8,7 @@
          get_version/0, 
          cypher/1,
          get_node/1,
+         delete_node/1,
          create_node/1]).
 
 % gen_server callbacks
@@ -36,6 +37,9 @@ cypher(Query) ->
 
 get_node(NodeId) ->
     gen_server:call(?MODULE, {get_node, NodeId}).
+
+delete_node(NodeId) ->
+    gen_server:call(?MODULE, {delete_node, NodeId}).
 
 % Properties should be in format {struct,[{key2,"?"}]}
 create_node(Properties) ->
@@ -87,6 +91,16 @@ handle_call({get_node, NodeId}, _From, State) ->
     {struct, Data} = Parsed,
     Data,
     {reply, Data, State};
+
+handle_call({delete_node, NodeId}, _From, State) ->
+    Url = State#state.config#config.neo4j_url ++ "/db/data/node/" ++ integer_to_list(NodeId),
+    Headers = [],
+    HTTPOptions = [],
+    Options = [],
+    Request = {Url, Headers},
+    Result = httpc:request(delete, Request, HTTPOptions, Options),
+    {ok, _Response} = Result,
+    {reply, {}, State};
 
 handle_call({create_node, Properties}, _From, State) ->
     Url = State#state.config#config.neo4j_url ++ "/db/data/node",

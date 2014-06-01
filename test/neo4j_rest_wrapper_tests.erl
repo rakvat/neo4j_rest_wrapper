@@ -9,7 +9,8 @@ with_inets_test_() ->
      [fun neo4j_version/0,
       fun cypher/0,
       fun get_node/0,
-      fun create_node/0
+      fun create_node/0,
+      fun delete_node/0
       ]}.
 
 neo4j_version() ->
@@ -57,6 +58,13 @@ create_node() ->
     SortedExpected = lists:sort(Expected),
     SortedExpected = SortedNodeData,
     ok.
+
+delete_node() ->
+    % TODO: create node that will be deleted
+    % or use mocks
+    Result = neo4j_rest_wrapper:delete_node(0),
+    % TODO: test that node is not available anymore
+    ok. 
 
 
 % TODO: handle errors from neo4j
