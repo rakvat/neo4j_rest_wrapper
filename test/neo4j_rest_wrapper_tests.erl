@@ -53,24 +53,27 @@ get_node() ->
     FakeResult = {ok, {x,x,FakeJson}},
     meck:expect(httpc, request, fun(_) -> FakeResult end),
     {ok, Result} = neo4j_rest_wrapper:get_node(1),
-    Data = proplists:get_value(<<"data">>, Result),
-    {struct, Properties} = Data,
+    ?assertEqual([properties], dict:fetch_keys(Result)),
+    Properties = dict:fetch(properties, Result),
     [{<<"a">>,<<"b">>}] = Properties,
     ?assert(meck:validate(httpc)),
     ?assertEqual(1, meck:num_calls(httpc, request, '_')).
 
 get_missing_node() ->
     {error, Result} = neo4j_rest_wrapper:get_node(125234656),
+    ?assertEqual(lists:sort([message, exception]), 
+                 lists:sort(dict:fetch_keys(Result))),
+    ?assertEqual(<<"NodeNotFoundException">>, 
+                 dict:fetch(exception, Result)),
     ?assert(meck:validate(httpc)),
     ?assertEqual(1, meck:num_calls(httpc, request, '_')).
-% "{\n  \"message\" : \"Cannot find node with id [23] in database.\",\n  \"exception\" : \"NodeNotFoundException\",\n  \"fullname\" : \"org.neo4j.server.rest.web.NodeNotFoundException\",\n  \"stacktrace\" : [ \"org.neo4j.server.rest.web.DatabaseActions.node(DatabaseActions.java:183)\", \"org.neo4j.server.rest.web.DatabaseActions.getNode(DatabaseActions.java:228)\", \"org.neo4j.server.rest.web.RestfulGraphDatabase.getNode(RestfulGraphDatabase.java:265)\", \"java.lang.reflect.Method.invoke(Unknown Source)\", \"org.neo4j.server.rest.transactional.TransactionalRequestDispatcher.dispatch(TransactionalRequestDispatcher.java:139)\", \"org.neo4j.server.rest.security.SecurityFilter.doFilter(SecurityFilter.java:112)\", \"java.lang.Thread.run(Unknown Source)\" ]\n}"
 
 create_node() ->
     Properties = {struct, [{name, <<"rakvat">>}, {age, 77}]},
     {ok, Result} = neo4j_rest_wrapper:create_node(Properties),
-    Data = proplists:get_value(<<"data">>, Result),
-    {struct, NodeData} = Data,
-    SortedNodeData = lists:sort(NodeData),
+    ?assertEqual([properties], dict:fetch_keys(Result)),
+    ResultProperties = dict:fetch(properties, Result),
+    SortedNodeData = lists:sort(ResultProperties),
     Expected = [{<<"name">>, <<"rakvat">>}, {<<"age">>, 77}],
     SortedExpected = lists:sort(Expected),
     ?assertEqual(SortedExpected, SortedNodeData),
@@ -85,18 +88,6 @@ delete_node() ->
 
 % TODO real neo4j connection roundtrip test
 
-% TODO: handle errors from neo4j
-%[{<<"message">>,<<"Cannot find node with id [1] in database.">>},
-% {<<"exception">>,<<"NodeNotFoundException">>},
-% {<<"fullname">>,
-%  <<"org.neo4j.server.rest.web.NodeNotFoundException">>},
-% {<<"stacktrace">>,
-%  [<<"org.neo4j.server.rest.web.DatabaseAction"...>>,
-%   <<"org.neo4j.server.rest.web.DatabaseAc"...>>,
-%   <<"org.neo4j.server.rest.web.Restfu"...>>,
-%   <<"java.lang.reflect.Method.inv"...>>,
-%   <<"org.neo4j.server.rest.tr"...>>,<<"org.neo4j.server.res"...>>,
-%   <<"java.lang.Thread"...>>]}]
 setup() ->
     meck:new(httpc, [passthrough]),
     neo4j_rest_wrapper:start("http://0.0.0.0:7474").

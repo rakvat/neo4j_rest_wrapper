@@ -85,14 +85,26 @@ handle_call({get_node, NodeId}, _From, State) ->
     Options = [],
     Request = {Url, Headers},
     Result = httpc:request(get, Request, HTTPOptions, Options),
+
     {ok, Response} = Result,
     {Status, _Headers, ResultBody} = Response,
     {_, StatusCode, _} = Status,
     Parsed = mochijson2:decode(ResultBody),
     {struct, Data} = Parsed,
+
     case StatusCode of
-       200 -> {reply, {ok, Data}, State};
-       _ -> {reply, {error, Data}, State}
+       200 ->
+            {struct, ResultProperties} = 
+                proplists:get_value(<<"data">>, Data),
+            List = [{properties, ResultProperties}],
+            Dict = dict:from_list(List),
+            {reply, {ok, Dict}, State};
+       _ -> 
+            Message = proplists:get_value(<<"message">>, Data),
+            Exception = proplists:get_value(<<"exception">>, Data),
+            List = [{message, Message}, {exception, Exception}],
+            Dict = dict:from_list(List),
+            {reply, {error, Dict}, State}
     end;
 
 handle_call({create_node, Properties}, _From, State) ->
@@ -104,14 +116,26 @@ handle_call({create_node, Properties}, _From, State) ->
     Options = [],
     Request = {Url, Headers, Type, Body},
     Result = httpc:request(post, Request, HTTPOptions, Options),
+
     {ok, Response} = Result,
     {Status, _Headers, ResultBody} = Response,
     {_, StatusCode, _} = Status,
     Parsed = mochijson2:decode(ResultBody),
     {struct, Data} = Parsed,
+
     case StatusCode of
-        201 -> {reply, {ok, Data}, State};
-        _ -> {reply, {error, Data}, State}
+        201 -> 
+            {struct, ResultProperties} = 
+                proplists:get_value(<<"data">>, Data),
+            List = [{properties, ResultProperties}],
+            Dict = dict:from_list(List),
+            {reply, {ok, Dict}, State};
+        _ -> 
+            Message = proplists:get_value(<<"message">>, Data),
+            Exception = proplists:get_value(<<"exception">>, Data),
+            List = [{message, Message}, {exception, Exception}],
+            Dict = dict:from_list(List),
+            {reply, {error, Dict}, State}
     end;
 
 handle_call({delete_node, NodeId}, _From, State) ->
