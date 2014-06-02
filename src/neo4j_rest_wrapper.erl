@@ -96,7 +96,11 @@ handle_call({get_node, NodeId}, _From, State) ->
        200 ->
             {struct, ResultProperties} = 
                 proplists:get_value(<<"data">>, Data),
-            List = [{properties, ResultProperties}],
+            SelfUrl = binary_to_list(
+                        proplists:get_value(<<"self">>, Data)),
+            CutAt = string:rchr(SelfUrl, $/) + 1,
+            NodeId = list_to_integer(string:substr(SelfUrl, CutAt)),
+            List = [{properties, ResultProperties}, {id, NodeId}],
             Dict = dict:from_list(List),
             {reply, {ok, Dict}, State};
        _ -> 
@@ -127,7 +131,11 @@ handle_call({create_node, Properties}, _From, State) ->
         201 -> 
             {struct, ResultProperties} = 
                 proplists:get_value(<<"data">>, Data),
-            List = [{properties, ResultProperties}],
+            SelfUrl = binary_to_list(
+                        proplists:get_value(<<"self">>, Data)),
+            CutAt = string:rchr(SelfUrl, $/) + 1,
+            NodeId = list_to_integer(string:substr(SelfUrl, CutAt)),
+            List = [{properties, ResultProperties}, {id, NodeId}],
             Dict = dict:from_list(List),
             {reply, {ok, Dict}, State};
         _ -> 

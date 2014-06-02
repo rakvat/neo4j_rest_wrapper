@@ -49,13 +49,15 @@ cypher() ->
     ok.
 
 get_node() ->
-    FakeJson = "{\"data\" : {\"a\": \"b\"}}",
-    FakeResult = {ok, {x,x,FakeJson}},
-    meck:expect(httpc, request, fun(_) -> FakeResult end),
-    {ok, Result} = neo4j_rest_wrapper:get_node(1),
-    ?assertEqual([properties], dict:fetch_keys(Result)),
+    FakeJson = "{\"data\" : {\"a\": \"b\"}, \"self\": \"http://0.0.0.0:7474/data/db/node/77\"}",
+    FakeResult = {ok, {{x,200,x},x,FakeJson}},
+    meck:expect(httpc, request, fun(get,_,_,_) -> FakeResult end),
+    {ok, Result} = neo4j_rest_wrapper:get_node(77),
+    ?assertEqual(lists:sort([id, properties]), 
+                 lists:sort(dict:fetch_keys(Result))),
+    ?assertEqual(77, dict:fetch(id, Result)),
     Properties = dict:fetch(properties, Result),
-    [{<<"a">>,<<"b">>}] = Properties,
+    ?assertEqual([{<<"a">>,<<"b">>}], Properties),
     ?assert(meck:validate(httpc)),
     ?assertEqual(1, meck:num_calls(httpc, request, '_')).
 
@@ -69,9 +71,11 @@ get_missing_node() ->
     ?assertEqual(1, meck:num_calls(httpc, request, '_')).
 
 create_node() ->
+    % TODO: fake
     Properties = {struct, [{name, <<"rakvat">>}, {age, 77}]},
     {ok, Result} = neo4j_rest_wrapper:create_node(Properties),
-    ?assertEqual([properties], dict:fetch_keys(Result)),
+    ?assertEqual(lists:sort([id, properties]), 
+                 lists:sort(dict:fetch_keys(Result))),
     ResultProperties = dict:fetch(properties, Result),
     SortedNodeData = lists:sort(ResultProperties),
     Expected = [{<<"name">>, <<"rakvat">>}, {<<"age">>, 77}],
