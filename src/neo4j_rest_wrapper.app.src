@@ -3,7 +3,7 @@
   {description, "erlang wrapper around parts of the neo4j rest api"},
   {vsn, "0.0.1"},
   {modules, [neo4j_rest_wrapper]},
-  {registered, []},
+  {registered, [neo4j_rest_wrapper]},
   {applications, [
                   kernel,
                   stdlib,
