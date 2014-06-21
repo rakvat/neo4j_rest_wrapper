@@ -1,7 +1,7 @@
 {application, neo4j_rest_wrapper,
  [
   {description, "erlang wrapper around parts of the neo4j rest api"},
-  {vsn, "0.0.1"},
+  {vsn, "0.0.2"},
   {modules, [neo4j_rest_wrapper]},
   {registered, [neo4j_rest_wrapper]},
   {applications, [
@@ -9,7 +9,7 @@
                   stdlib,
                   inets
                  ]},
-  {mod, { neo4j_rest_wrapper_app, []}},
+  {mod, { neo4j_rest_wrapper, []}},
   {env, []}
  ]}.
 
