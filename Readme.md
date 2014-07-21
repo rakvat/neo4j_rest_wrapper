@@ -1,3 +1,10 @@
+# Rather use this one
+
+Dimitriid has a working neo4j wrapper for erlang:
+[neo4j-erlang](https://github.com/dmitriid/neo4j-erlang.git)
+
+Mine was only experimental.
+
 # neo4j rest wrapper
 
 This is work in progress. 
